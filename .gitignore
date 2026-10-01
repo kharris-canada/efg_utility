@@ -1,0 +1,16 @@
+# Python bytecode and tool caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Packaging and virtual environments
+*.egg-info/
+build/
+dist/
+.venv/
+
+# Local and OS files
+.DS_Store
+Calc_EFG_Ions.pdf
