@@ -1,0 +1,2 @@
+# One occupied hydrogenic 2pz orbital, displaced by 1 angstrom
+H 0  0 1   2pz -  60.0  0.333

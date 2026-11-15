@@ -11,7 +11,6 @@ from efg_utility.point_charge import (
     ELEMENTARY_CHARGE_C,
 )
 
-
 ANGSTROM = 1.0e-10
 
 

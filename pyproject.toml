@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "efg-utility"
-version = "0.1.0"
-description = "Calculate electric field gradient parameters from point charges."
+version = "0.5.0"
+description = "Calculate electric field gradients from point charges, orbitals, and SALCs."
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = ["numpy>=1.24"]

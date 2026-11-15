@@ -1,0 +1,3 @@
+# One symmetry-unique charge on the positive z axis.
+# Expanding as Td  produces the four octahedral  positions.
+X  1  1  1  -2

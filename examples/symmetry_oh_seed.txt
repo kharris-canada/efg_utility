@@ -1,0 +1,3 @@
+# One symmetry-unique charge on the positive z axis.
+# Expanding under Oh produces the six octahedral positions.
+X  0  0  1  -2

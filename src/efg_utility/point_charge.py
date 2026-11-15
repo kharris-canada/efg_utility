@@ -2,79 +2,29 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable
 import math
+from collections.abc import Iterable
 
 import numpy as np
 
+from .constants import (
+    COULOMB_CONSTANT,
+    ELEMENTARY_CHARGE_C,
+)
+from .constants import (
+    VACUUM_PERMITTIVITY_F_PER_M as _VACUUM_PERMITTIVITY_F_PER_M,
+)
+from .errors import CalculationError
 from .models import EFGResult, PointCharge
+from .tensor import efg_parameters_from_tensor
+
+# Preserve the constants that were available from this module in version 0.1.
+VACUUM_PERMITTIVITY_F_PER_M = _VACUUM_PERMITTIVITY_F_PER_M
 
 
-# Elementary charge is exact in the SI. Vacuum permittivity is the 2022 CODATA
-# recommended value in F/m.
-ELEMENTARY_CHARGE_C = 1.602176634e-19
-VACUUM_PERMITTIVITY_F_PER_M = 8.8541878188e-12
-COULOMB_CONSTANT = 1.0 / (4.0 * math.pi * VACUUM_PERMITTIVITY_F_PER_M)
-
-_CANCELLATION_RTOL = 1.0e-12
-_ORDERING_RTOL = 1.0e-12
-_ETA_ENDPOINT_ATOL = 1.0e-12
-
-
-class CalculationError(ValueError):
-    """Raised when a requested EFG calculation is singular or non-finite."""
-
-
-def _magnitude_tied(value: float, reference: float) -> bool:
-    return math.isclose(
-        abs(value),
-        abs(reference),
-        rel_tol=_ORDERING_RTOL,
-        abs_tol=0.0,
-    )
-
-
-def _largest_magnitude_index(values: np.ndarray, indices: list[int]) -> int:
-    """Return the largest-magnitude index, preferring positive values on ties."""
-
-    largest = max(indices, key=lambda index: abs(float(values[index])))
-    tied = [
-        index
-        for index in indices
-        if _magnitude_tied(float(values[index]), float(values[largest]))
-    ]
-    return max(tied, key=lambda index: float(values[index]))
-
-
-def _principal_components(eigenvalues: np.ndarray) -> tuple[float, float, float]:
-    indices = [0, 1, 2]
-    z_index = _largest_magnitude_index(eigenvalues, indices)
-    indices.remove(z_index)
-    y_index = _largest_magnitude_index(eigenvalues, indices)
-    indices.remove(y_index)
-    x_index = indices[0]
-    return (
-        float(eigenvalues[x_index]),
-        float(eigenvalues[y_index]),
-        float(eigenvalues[z_index]),
-    )
-
-
-def _normalize_eta(eta: float) -> float:
-    if math.isclose(eta, 0.0, rel_tol=0.0, abs_tol=_ETA_ENDPOINT_ATOL):
-        return 0.0
-    if math.isclose(eta, 1.0, rel_tol=0.0, abs_tol=_ETA_ENDPOINT_ATOL):
-        return 1.0
-    return eta
-
-
-def calculate_efg(charges: Iterable[PointCharge]) -> EFGResult:
-    """Calculate signed ``VZZ`` and ``eta`` at the origin.
-
-    Positions must be supplied in metres and charges in integer multiples of
-    the elementary charge. A nonzero charge at the origin is singular.
-    """
-
+def _point_charge_tensor_and_scale(
+    charges: Iterable[PointCharge],
+) -> tuple[np.ndarray, float]:
     tensor = np.zeros((3, 3), dtype=np.float64)
     contribution_scale = 0.0
 
@@ -126,19 +76,25 @@ def calculate_efg(charges: Iterable[PointCharge]) -> EFGResult:
                 "summed EFG tensor is outside the supported numeric range"
             )
 
-    tensor = 0.5 * (tensor + tensor.T)
-    tensor_magnitude = float(np.max(np.abs(tensor)))
+    return 0.5 * (tensor + tensor.T), contribution_scale
 
-    if contribution_scale == 0.0 or (
-        tensor_magnitude <= _CANCELLATION_RTOL * contribution_scale
-    ):
-        return EFGResult(vzz=0.0, eta=None)
 
-    try:
-        eigenvalues = np.linalg.eigvalsh(tensor)
-    except np.linalg.LinAlgError as error:
-        raise CalculationError(f"could not diagonalize the EFG tensor: {error}") from None
+def calculate_point_charge_tensor(charges: Iterable[PointCharge]) -> np.ndarray:
+    """Calculate the traceless point-charge EFG tensor at the origin."""
 
-    vxx, vyy, vzz = _principal_components(eigenvalues)
-    eta = _normalize_eta((vxx - vyy) / vzz)
-    return EFGResult(vzz=vzz, eta=eta)
+    tensor, _contribution_scale = _point_charge_tensor_and_scale(charges)
+    return tensor
+
+
+def calculate_efg(charges: Iterable[PointCharge]) -> EFGResult:
+    """Calculate signed ``VZZ`` and ``eta`` at the origin.
+
+    Positions must be supplied in metres and charges in integer multiples of
+    the elementary charge. A nonzero charge at the origin is singular.
+    """
+
+    tensor, contribution_scale = _point_charge_tensor_and_scale(charges)
+    return efg_parameters_from_tensor(
+        tensor,
+        cancellation_scale=contribution_scale,
+    )

@@ -1,0 +1,4 @@
+# One occupied hydrogenic 1s orbital centered 1 angstrom from the origin.
+# The radius is derived from a = a0 / Zeff with Zeff = 4.
+# name  x_A  y_A  z_A  orbital  radius_A  zeff  occupation
+H  0.0  0.0  1.0  1s  -  4.0  1.0

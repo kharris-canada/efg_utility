@@ -1,0 +1,3 @@
+# One occupied hydrogenic 1s orbital centered at (0, 0, 1) angstrom.
+# name  x_A  y_A  z_A  orbital  radius_A  zeff  occupation
+H  0.0  0.0  1.0  1s  -  -  1.0

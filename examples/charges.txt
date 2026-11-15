@@ -1,0 +1,2 @@
+# Six +1 charges in an octahedral arrangement
+X 1  0.0  0.0  +1

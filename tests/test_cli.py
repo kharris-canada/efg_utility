@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import os
-from pathlib import Path
 import subprocess
 import sys
+from pathlib import Path
 
 from efg_utility.cli import main
 
@@ -67,3 +67,50 @@ def test_empty_file_reports_undefined_eta(tmp_path: Path, capsys: object) -> Non
     assert exit_code == 0
     assert "VZZ = +0.000000000000e+00 V/m^2" in captured.out
     assert "eta = undefined" in captured.out
+
+
+def test_orbital_command_prints_full_and_traceless_tensors(
+    tmp_path: Path, capsys: object
+) -> None:
+    input_file = tmp_path / "orbital.txt"
+    input_file.write_text("H 0 0 1 1s - - 1\n", encoding="utf-8")
+
+    exit_code = main(["orbital", str(input_file)])
+    captured = capsys.readouterr()  # type: ignore[attr-defined]
+
+    assert exit_code == 0
+    assert "potential = " in captured.out
+    assert "full Hessian (V/m^2):" in captured.out
+    assert "trace = " in captured.out
+    assert "traceless EFG (V/m^2):" in captured.out
+    assert "VZZ = " in captured.out
+    assert "eta = 0" in captured.out
+    assert captured.err == ""
+
+
+def test_orbital_input_error_has_no_traceback(
+    tmp_path: Path, capsys: object
+) -> None:
+    input_file = tmp_path / "bad_orbital.txt"
+    input_file.write_text("H 0 0 1 3s - - 1\n", encoding="utf-8")
+
+    exit_code = main(["orbital", str(input_file)])
+    captured = capsys.readouterr()  # type: ignore[attr-defined]
+
+    assert exit_code == 2
+    assert captured.out == ""
+    assert "unsupported orbital type" in captured.err
+    assert "Traceback" not in captured.err
+
+
+def test_2p_orbital_cli_smoke_test(tmp_path: Path, capsys: object) -> None:
+    input_file = tmp_path / "orbital.txt"
+    input_file.write_text("H 0 0 1 2pz - 2 1\n", encoding="utf-8")
+
+    exit_code = main(["orbital", str(input_file)])
+    captured = capsys.readouterr()  # type: ignore[attr-defined]
+
+    assert exit_code == 0
+    assert "traceless EFG (V/m^2):" in captured.out
+    assert "VZZ = " in captured.out
+    assert captured.err == ""
